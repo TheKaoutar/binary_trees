@@ -1,106 +1,84 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "binary_trees.h"
-
+bst_t *min_node(bst_t *tree);
+bst_t *del_node(bst_t *tree, bst_t *node);
+bst_t *bst_removal(bst_t *tree, bst_t *node, int value);
 /**
- * find_inorder_successor - finds the successor of a node
- * using the inorder traversal
- * @node: the node
- * Return: a pointer to the inorder successor
+ * min_node - gets the node with minimum value
+ * @tree: bst root
+ * Return: node with minimum value
  */
-bst_t *find_inorder_successor(bst_t *node)
+bst_t *min_node(bst_t *tree)
 {
-		node = node->right;
-		while (node->left)
-		{
-			node = node->left;
-		}
-		return (node);
+while (tree->left != NULL)
+tree = tree->left;
+return (tree);
 }
 
 /**
- * replace_node_with_successor - replaces the node with its successor
- * @root: the root of the tree
- * @node: the node to be replaced
+ * del_node - removes a node from a bst
+ * @tree: bst root
+ * @node: node to remove
+ * Return: new root after deletion
  */
-void replace_node_with_successor(bst_t **root, bst_t *node)
+bst_t *del_node(bst_t *tree, bst_t *node)
 {
-	bst_t *successor;
-
-	successor = find_inorder_successor(node);
-	if (successor->parent)
-		successor->parent->left = successor->right;
-	if (successor->right)
-		successor->right->parent = successor->parent;
-	node->right->parent = successor;
-	node->left->parent = successor;
-	successor->right = node->right;
-	successor->left = node->left;
-	successor->parent = node->parent;
-	if (node == *root)
-		*root = successor;
-	else if (node->parent)
-	{
-		if (node->parent && node == node->parent->left)
-			node->parent->left = successor;
-		else
-			node->parent->right = successor;
-	}
+bst_t *parent = node->parent, *successor = NULL;
+if (node->left == NULL)
+{
+if (parent != NULL && parent->left == node)
+parent->left = node->right;
+else if (parent != NULL)
+parent->right = node->right;
+if (node->right != NULL)
+node->right->parent = parent;
+free(node);
+return (parent == NULL ? node->right : tree);
+}
+if (node->right == NULL)
+{
+if (parent != NULL && parent->left == node)
+parent->left = node->left;
+else if (parent != NULL)
+parent->right = node->left;
+if (node->left != NULL)
+node->left->parent = parent;
+free(node);
+return (parent == NULL ? node->left : tree);
+}
+successor = min_node(node->right);
+node->n = successor->n;
+return (del_node(tree, successor));
 }
 
 /**
- * one_child - handles the case when node has one child
- * @node: node
- * @child: right OR left child of node
+ * bst_removal - removes a node from bst recurcively
+ * @tree: bst root
+ * @node: node to remove
+ * @value: value contained in the node
+ * Return: the new root after deletion
  */
-void one_child(bst_t *node, bst_t *child)
+bst_t *bst_removal(bst_t *tree, bst_t *node, int value)
 {
-	child->parent = node->parent;
-	if (node == node->parent->right)
-		node->parent->right = child;
-	else
-		node->parent->left = child;
+if (node != NULL)
+{
+if (node->n == value)
+return (del_node(tree, node));
+if (node->n > value)
+return (bst_removal(tree, node->left, value));
+return (bst_removal(tree, node->right, value));
 }
+return (NULL);
+}
+
 /**
- * bst_remove - a function that removes a node from a Binary Search Tree
- * @root: a pointer to the root node of the tree
- * @value: the value to remove in the tree
- * Return: a pointer to the root
+ * bst_remove - removes a bst node
+ * @root: bst root
+ * @value: value of the node to be removed
+ * Return: new root after deletion
  */
 bst_t *bst_remove(bst_t *root, int value)
 {
-	bst_t *node;
-
-	if (!root)
-		return (NULL);
-	node = (bst_t *)root;
-	while (node)
-	{
-		if (node->n == value)
-		{
-			if (node->left && node->right)
-			{
-				replace_node_with_successor(&root, node);
-			}
-			else if (node->left && node->parent)
-			{
-				one_child(node, node->left);
-			}
-			else if (node->right && node->parent)
-			{
-				one_child(node, node->right);
-			}
-
-			else if ((node->left || node->right) && !node->parent)
-			{
-				node->left->parent = NULL;
-				root = node->left;
-			}
-			free(node);
-			return (root);
-		}
-		else if (node->n > value)
-			node = node->left;
-		else if (node->n < value)
-			node = node->right;
-	}
-	return (root);
+return (bst_removal(root, root, value));
 }
